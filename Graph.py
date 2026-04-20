@@ -96,6 +96,28 @@ class Graph:
         print(f"边数: {self.edge_count()}")
         print(f"是否全联通: {self.is_connected()}")
 
+    # 确定中央仓库
+    def set_central_warehouse(self, width, height):
+        # 根据地图的物理中心 (width/2, height/2)，寻找最近的节点作为中央仓库。
+        center_x, center_y = width / 2, height / 2
+        best_node_id = None
+        min_dist = float('inf')
+
+        for node_id, node in self.nodes.items():
+            # 计算节点到地图中心的欧几里得距离
+            dist = math.sqrt((node.x - center_x) ** 2 + (node.y - center_y) ** 2)
+            if dist < min_dist:
+                min_dist = dist
+                best_node_id = node_id
+
+        # 将选中的节点类型设为仓库
+        if best_node_id is not None:
+            self.nodes[best_node_id].type = "warehouse"
+            print(
+                f"中央仓库已确定：节点 {best_node_id}，坐标 ({self.nodes[best_node_id].x:.2f}, {self.nodes[best_node_id].y:.2f}) ")
+
+        return best_node_id
+
 
 def _is_far_enough(existing_nodes, x, y, min_distance):
     """
@@ -265,18 +287,22 @@ def visualize_graph(graph, show_weights=False):
 
     # 再画节点
     for node_id, node in graph.nodes.items():
-        color = "skyblue"  # 默认普通道路节点颜色
-
-        # 根据不同节点类型设置不同颜色
+        color = "skyblue"  # 默认颜色
+        # 核心修改：确保这里匹配到仓库类型
         if node.type == "warehouse":
-            color = "red"
+            color = "red"  # 仓库显示为红色
+            size = 150  # 仓库可以稍微大一点
         elif node.type == "charging_station":
             color = "green"
+            size = 100
         elif node.type == "task_point":
             color = "orange"
+            size = 100
+        else:
+            size = 100
 
-        plt.scatter(node.x, node.y, s=100, c=color, edgecolors="black", zorder=3)
-        plt.text(node.x + 1, node.y + 1, str(node_id), fontsize=9)
+        plt.scatter(node.x, node.y, s=size, c=color, edgecolors="black", zorder=5)
+        plt.text(node.x + 1, node.y + 1, str(node_id), fontsize=9, fontweight='bold')
 
     plt.title("Connected Weighted Undirected Graph")
     plt.xlabel("X")
@@ -291,14 +317,15 @@ if __name__ == "__main__":
     # 这一句会固定随机数种子
     # 所以每次运行程序，生成的图都一样
     random.seed()
-
+    width, height = 200, 200
     graph = generate_connected_weighted_graph(
-        num_nodes=30,   # 节点数量
-        width=200,      # 地图宽度
-        height=200,     # 地图高度
-        extra_k=2,      # 每个节点额外补充连接的近邻数
-        min_distance=15 # 任意两节点之间最小距离约束
+        num_nodes=30,
+        width=width,
+        height=height,
+        extra_k=2,
+        min_distance=15
     )
+    graph.set_central_warehouse(width, height)
 
     graph.print_graph_info()
     visualize_graph(graph, show_weights=False)
